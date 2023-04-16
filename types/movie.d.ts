@@ -9,11 +9,12 @@ interface Movie {
     plot: string;
     posterUrl: string;
     imdbRating: string;
-    imdbId: string;
+    imdbID: string;
+    isBookmarked: boolean;
 }
 
 interface MovieSearchResult {
-    id: string;
+    imdbID: string;
     title: string;
     posterUrl: string;
 }
