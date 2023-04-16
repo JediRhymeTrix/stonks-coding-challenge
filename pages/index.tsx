@@ -10,7 +10,7 @@ import {
   Center,
   Spinner,
 } from "@chakra-ui/react";
-import { SearchIcon } from "@chakra-ui/icons";
+import { SearchIcon, StarIcon } from "@chakra-ui/icons";
 import { Movie } from "../types/movie";
 import debounce from "lodash/debounce";
 
@@ -20,20 +20,41 @@ const IndexPage = () => {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // debounce the handleSearch function to reduce API calls
-  const debouncedHandleSearch = debounce(async () => {
+  // search function that handles the API call and bookmarks
+  const searchMovies = async (query: string) => {
     setLoading(true);
-    const response = await fetch(`/api/search?query=${searchQuery}`);
+    const response = await fetch(`/api/search?query=${query}`);
     const moviesData = await response.json();
-    setMovies(moviesData);
+    const bookmarks = Object.keys(localStorage)
+      .filter((key) => key.startsWith("bookmark_"))
+      .map((key) => ({
+        imdbID: key.split("_")[1],
+        isBookmarked: localStorage.getItem(key) === "1",
+      }));
+    const moviesWithBookmark = Array.isArray(moviesData)
+      ? moviesData.map((movie: Movie) => {
+        // Check if the movie is already bookmarked
+        const bookmark = bookmarks.find((b) => b.imdbID === movie.imdbID);
+        const isBookmarked = bookmark ? bookmark.isBookmarked : false;
+        return {
+          ...movie,
+          isBookmarked,
+        };
+      })
+      : [];
+    setMovies(moviesWithBookmark);
     setLoading(false);
-  }, 500);
+  };
+
+
+  // debounce the search function to reduce API calls
+  const debouncedSearchMovies = debounce(searchMovies, 500);
 
   // handle input change
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value);
     if (e.target.value.length >= 3) {
-      debouncedHandleSearch();
+      debouncedSearchMovies(e.target.value);
     } else {
       setMovies([]);
     }
@@ -42,18 +63,32 @@ const IndexPage = () => {
   // handle enter key press
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      handleSearch();
+      debouncedSearchMovies.cancel();
+      searchMovies(searchQuery);
     }
   };
 
   // handle search button click
-  const handleSearch = async () => {
-    setLoading(true);
-    const response = await fetch(`/api/search?query=${searchQuery}`);
-    const moviesData = await response.json();
-    setMovies(moviesData);
-    setLoading(false);
+  const handleSearch = () => {
+    debouncedSearchMovies.cancel();
+    searchMovies(searchQuery);
   };
+
+  const toggleBookmark = (imdbID: string) => {
+    const updatedMovies = movies.map((movie) => {
+      if (movie.imdbID === imdbID) {
+        const isBookmarked = !movie.isBookmarked;
+        localStorage.setItem(`bookmark_${imdbID}`, isBookmarked ? "1" : "0");
+        return {
+          ...movie,
+          isBookmarked,
+        };
+      }
+      return movie;
+    });
+    setMovies(updatedMovies);
+  };
+
 
   return (
     <Container maxW="container.xl">
@@ -106,19 +141,29 @@ const IndexPage = () => {
       {!loading && movies.length > 0 ? (
         <Stack>
           {movies.map((movie) => (
-            <Box
-              key={movie.imdbId}
-              p="5"
-              rounded="md"
-              boxShadow="md"
-              _hover={{ bg: "gray.100" }}
-            >
+            <Box key={movie.imdbID}>
               <Heading as="h3" size="md">
                 {movie.title}
               </Heading>
-              <Text color="gray.500">{movie.year}</Text>
+              <Text>{movie.year}</Text>
+              <Button
+                size="sm"
+                onClick={() => toggleBookmark(movie.imdbID)}
+                colorScheme={movie.isBookmarked ? "green" : "gray"}
+                leftIcon={<StarIcon color={movie.isBookmarked ? "green.500" : "gray.500"} />}
+              >
+                {movie.isBookmarked ? "Bookmarked" : "Bookmark"}
+              </Button>
+
             </Box>
           ))}
+          {/* button to quickly reset bookmarks */}
+          <Button onClick={() => {
+            localStorage.clear();
+            setMovies([]);
+          }}>
+            Reset
+          </Button>
         </Stack>
       ) : null}
     </Container>
