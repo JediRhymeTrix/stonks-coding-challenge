@@ -72,7 +72,7 @@ const Bookmarks = ({ toggleBookmark }: Props) => {
           </Box>
         ))
       ) : (
-        <Text>No bookmarks added</Text>
+          <Text color="lightgray">No bookmarks added</Text>
       )}
     </Box>
   );
