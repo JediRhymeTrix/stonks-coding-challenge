@@ -53,7 +53,7 @@ const Bookmarks = ({ toggleBookmark }: Props) => {
         bookmarks.map(movie => (
           <Box key={movie.imdbID} className="movie">
             <Text
-              className="movie-title"
+              className="movie-title text-clickable"
               onClick={() => onBookmarkClick(movie.imdbID)}
             >
               {movie.title}
@@ -72,7 +72,7 @@ const Bookmarks = ({ toggleBookmark }: Props) => {
           </Box>
         ))
       ) : (
-        <Text>No bookmarks added</Text>
+          <Text color="lightgray">No bookmarks added</Text>
       )}
     </Box>
   );
