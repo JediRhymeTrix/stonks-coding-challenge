@@ -44,6 +44,7 @@ const MovieDetails = () => {
     const storedReview = localStorage.getItem(`review_${movie.imdbID}`);
     if (storedReview) {
       setReview(storedReview);
+
     }
 
   }, [id, movie]);
