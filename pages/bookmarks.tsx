@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Box, Text, IconButton } from "@chakra-ui/react";
-import { CloseIcon } from "@chakra-ui/icons";
+import { CloseIcon, ViewIcon, ViewOffIcon } from "@chakra-ui/icons";
 import { Bookmark } from "../types/index";
 import { useRouter } from "next/router";
 
@@ -23,10 +23,27 @@ const Bookmarks = ({ toggleBookmark }: Props) => {
       imdbID: key.split("_")[1],
       title: localStorage.getItem(`title_${key.split("_")[1]}`),
       year: localStorage.getItem(`year_${key.split("_")[1]}`),
+      watched: localStorage.getItem(`watched_${key.split("_")[1]}`) === "true",
     }));
 
     setBookmarks(bookmarks);
   }, [bookmarks]);
+
+  const handleToggleWatched = (imdbID: string) => {
+    setBookmarks(prevBookmarks =>
+      prevBookmarks.map(bookmark => {
+        if (bookmark.imdbID === imdbID) {
+          const newWatched = !bookmark.watched;
+          localStorage.setItem(`watched_${imdbID}`, newWatched.toString());
+          return {
+            ...bookmark,
+            watched: newWatched,
+          };
+        }
+        return bookmark;
+      })
+    );
+  };
 
   const handleRemoveBookmark = (imdbID: string) => {
     localStorage.removeItem(`bookmark_${imdbID}`);
@@ -42,7 +59,6 @@ const Bookmarks = ({ toggleBookmark }: Props) => {
 
   // navigate to movie details page
   const onBookmarkClick = (imdbID: string) => {
-    console.log('onBookmarkClick', imdbID);
     // router.push(`/movie/${imdbID}`); // TODO: check why this isn't rendering the new page
     window.location.href = `/movie/${imdbID}`; // ! temporary hack
   }
@@ -60,6 +76,15 @@ const Bookmarks = ({ toggleBookmark }: Props) => {
             </Text>
             <Text className="movie-year">{movie.year}</Text>
             <Box className="movie-bookmark">
+              <IconButton
+                aria-label="Toggle watched status"
+                icon={movie.watched ? <ViewIcon /> : <ViewOffIcon />}
+                onClick={() => handleToggleWatched(movie.imdbID)}
+                mr="2"
+              />
+              <Text fontSize="xs" fontWeight="bold" color="gray.500" ml="1">
+                {movie.watched ? "Mark as unwatched" : "Mark as watched"}
+              </Text>
               <IconButton
                 aria-label="Remove from bookmarks"
                 icon={<CloseIcon />}
