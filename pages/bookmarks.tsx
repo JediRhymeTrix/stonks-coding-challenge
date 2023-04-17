@@ -42,6 +42,7 @@ const Bookmarks = ({ toggleBookmark }: Props) => {
 
   // navigate to movie details page
   const onBookmarkClick = (imdbID: string) => {
+    console.log('onBookmarkClick', imdbID);
     // router.push(`/movie/${imdbID}`); // TODO: check why this isn't rendering the new page
     window.location.href = `/movie/${imdbID}`; // ! temporary hack
   }
