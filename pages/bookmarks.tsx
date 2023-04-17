@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Box, Text, IconButton } from "@chakra-ui/react";
 import { CloseIcon } from "@chakra-ui/icons";
 import { Bookmark } from "../types/index";
+import { useRouter } from "next/router";
 
 interface Props {
   toggleBookmark: (imdbID: string, removed?: boolean) => void;
@@ -10,6 +11,7 @@ interface Props {
 const Bookmarks = ({ toggleBookmark }: Props) => {
   // initialize state variables
   const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     // Get all the bookmarks from localStorage
@@ -38,12 +40,23 @@ const Bookmarks = ({ toggleBookmark }: Props) => {
     toggleBookmark(imdbID, true);
   };
 
+  // navigate to movie details page
+  const onBookmarkClick = (imdbID: string) => {
+    // router.push(`/movie/${imdbID}`); // TODO: check why this isn't rendering the new page
+    window.location.href = `/movie/${imdbID}`; // ! temporary hack
+  }
+
   return (
     <Box>
       {bookmarks.length > 0 ? (
         bookmarks.map(movie => (
           <Box key={movie.imdbID} className="movie">
-            <Text className="movie-title">{movie.title}</Text>
+            <Text
+              className="movie-title"
+              onClick={() => onBookmarkClick(movie.imdbID)}
+            >
+              {movie.title}
+            </Text>
             <Text className="movie-year">{movie.year}</Text>
             <Box className="movie-bookmark">
               <IconButton
