@@ -195,8 +195,10 @@ const IndexPage = () => {
 
       {/* reset button */}
       <Button className="reset-button" onClick={() => {
-        localStorage.clear();
-        setMovies([]);
+        if (window.confirm('Are you sure you want to reset? This will delete ALL bookmarks, watched statuses and reviews.')) {
+          localStorage.clear();
+          setMovies([]);
+        }
       }}>
         Reset
       </Button>
