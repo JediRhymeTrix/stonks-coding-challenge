@@ -1,17 +1,24 @@
 import { useState } from "react";
 import {
   Container,
-  Heading,
   Input,
   Stack,
   Button,
+  IconButton,
   Box,
   Text,
   Center,
   Spinner,
+  Tabs,
+  TabList,
+  Tab,
+  TabPanels,
+  TabPanel
 } from "@chakra-ui/react";
-import { SearchIcon, StarIcon } from "@chakra-ui/icons";
+import { SearchIcon, AddIcon, CheckIcon } from "@chakra-ui/icons";
 import { Movie } from "../types/movie";
+import Bookmarks from "./bookmarks";
+import { Bookmark } from "../types/index";
 import debounce from "lodash/debounce";
 
 const IndexPage = () => {
@@ -74,14 +81,30 @@ const IndexPage = () => {
     searchMovies(searchQuery);
   };
 
-  const toggleBookmark = (imdbID: string) => {
+  const toggleBookmark = (imdbID: string, removed?: boolean) => {
     const updatedMovies = movies.map((movie) => {
       if (movie.imdbID === imdbID) {
         const isBookmarked = !movie.isBookmarked;
-        localStorage.setItem(`bookmark_${imdbID}`, isBookmarked ? "1" : "0");
+
+        if (!removed) {
+          localStorage.setItem(`bookmark_${imdbID}`, isBookmarked ? "1" : "0");
+          localStorage.setItem(`title_${imdbID}`, movie.title);
+          localStorage.setItem(`year_${imdbID}`, movie.year);
+
+          // Add or remove the bookmark from the bookmarks array in local storage
+          const bookmarks = JSON.parse(localStorage.getItem("bookmarks") || "[]");
+          if (isBookmarked) {
+            bookmarks.push({ imdbID, title: movie.title, year: movie.year });
+          } else {
+            const index = bookmarks.findIndex((bookmark: Bookmark) => bookmark.imdbID === imdbID);
+            bookmarks.splice(index, 1);
+          }
+          localStorage.setItem("bookmarks", JSON.stringify(bookmarks));
+        }
+
         return {
           ...movie,
-          isBookmarked,
+          isBookmarked: removed ? false : isBookmarked,
         };
       }
       return movie;
@@ -89,83 +112,95 @@ const IndexPage = () => {
     setMovies(updatedMovies);
   };
 
-
   return (
     <Container maxW="container.xl">
-      {/* search heading */}
-      <Center mb="10">
-        <Heading as="h1" fontSize="6xl">
-          Movie Search
-        </Heading>
-      </Center>
-
-      {/* search input and button */}
-      <Stack direction="row" spacing="4" mb="10">
-        <Input
-          placeholder="Enter movie name"
-          value={searchQuery}
-          onChange={handleInputChange}
-          onKeyDown={handleKeyDown}
-          size="lg"
-          fontSize="xl"
-          fontWeight="bold"
-          rounded="none"
-          borderWidth="0"
-          boxShadow="md"
-          focusBorderColor="purple.500"
-        />
-        <Button
-          leftIcon={<SearchIcon />}
-          onClick={handleSearch}
-          isLoading={loading}
-          size="lg"
-          fontSize="xl"
-          fontWeight="bold"
-          rounded="none"
-          colorScheme="purple"
-          boxShadow="md"
-          _hover={{ bg: "purple.500" }}
-        >
-          Search
-        </Button>
-      </Stack>
-
-      {/* loading spinner */}
-      {loading && (
-        <Center>
-          <Spinner size="xl" color="purple.500" />
-        </Center>
-      )}
-
-      {/* display search results */}
-      {!loading && movies.length > 0 ? (
-        <Stack>
-          {movies.map((movie) => (
-            <Box key={movie.imdbID}>
-              <Heading as="h3" size="md">
-                {movie.title}
-              </Heading>
-              <Text>{movie.year}</Text>
+      {/* header */}
+      <Tabs isFitted>
+        <TabList mb="4">
+          <Tab className="tab">Search Movies</Tab>
+          <Tab className="tab">Bookmarks</Tab>
+        </TabList>
+        <TabPanels>
+          <TabPanel>
+            {/* search input and button */}
+            <Stack direction="row" spacing="4" mb="10">
+              <Input
+                className="search-input"
+                placeholder="Enter movie name"
+                value={searchQuery}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                size="lg"
+                fontSize="xl"
+                fontWeight="bold"
+                rounded="none"
+                borderWidth="0"
+                boxShadow="md"
+                focusBorderColor="purple.500"
+              />
               <Button
-                size="sm"
-                onClick={() => toggleBookmark(movie.imdbID)}
-                colorScheme={movie.isBookmarked ? "green" : "gray"}
-                leftIcon={<StarIcon color={movie.isBookmarked ? "green.500" : "gray.500"} />}
+                className="search-button"
+                leftIcon={<SearchIcon />}
+                onClick={handleSearch}
+                isLoading={loading}
+                size="lg"
+                fontSize="xl"
+                fontWeight="bold"
+                rounded="none"
+                colorScheme="purple"
+                boxShadow="md"
+                _hover={{ bg: "purple.500" }}
               >
-                {movie.isBookmarked ? "Bookmarked" : "Bookmark"}
+                Search
               </Button>
+            </Stack>
 
-            </Box>
-          ))}
-          {/* button to quickly reset bookmarks */}
-          <Button onClick={() => {
-            localStorage.clear();
-            setMovies([]);
-          }}>
-            Reset
-          </Button>
-        </Stack>
-      ) : null}
+            {/* loading spinner */}
+            {loading && (
+              <Center>
+                <Spinner size="xl" />
+              </Center>
+            )}
+
+            {/* movie results */}
+            {!loading && (
+              <>
+                {movies.map((movie) => (
+                  <Box key={movie.imdbID} className="movie">
+                    <Text className="movie-title">{movie.title}</Text>
+                    <Text className="movie-year">{movie.year}</Text>
+                    <Box className="movie-bookmark">
+                      <IconButton
+                        aria-label={movie.isBookmarked ? "Remove from bookmarks" : "Add to bookmarks"}
+                        icon={movie.isBookmarked ? <CheckIcon /> : <AddIcon />}
+                        onClick={() => toggleBookmark(movie.imdbID)}
+                      />
+                      <Text fontSize="xs" fontWeight="bold" color="gray.500" ml="1">
+                        {movie.isBookmarked ? "Bookmarked" : "Add to bookmarks"}
+                      </Text>
+                    </Box>
+                  </Box>
+                ))}
+
+              </>
+            )}
+          </TabPanel>
+
+          <TabPanel>
+            {/* bookmarks */}
+            <Bookmarks toggleBookmark={toggleBookmark} />
+          </TabPanel>
+        </TabPanels>
+      </Tabs>
+
+      {/* reset button */}
+      <Button className="reset-button" onClick={() => {
+        localStorage.clear();
+        setMovies([]);
+      }}>
+        Reset
+      </Button>
+
     </Container>
   );
 };
